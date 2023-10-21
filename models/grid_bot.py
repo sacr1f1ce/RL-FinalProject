@@ -48,6 +48,8 @@ class GridBot:
                     self.history += [self.balance]
                     self.buy_points += [(index, row.Low)]
                     
+        return self
+                    
                     
     def plot(self, df_path):
         df = pd.read_csv(df_path)
