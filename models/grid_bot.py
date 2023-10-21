@@ -55,12 +55,12 @@ class GridBot:
         plt.plot(df.index, (df.High+df.Low)/2, color='black', marker='o', linestyle='-',
              linewidth=1, markersize=1)
 
-        plt.plot(df.index, [grid_bot.ref_price for i in df.index ], color='blue', linewidth=3, label='ref')
-        plt.plot(df.index, [grid_bot.buy_orders for i in df.index ], color ='green', linewidth =0.5, linestyle='--' )
-        plt.plot(df.index, [grid_bot.sell_orders for i in df.index ] , color ='red', linewidth =0.5, linestyle='--')
+        plt.plot(df.index, [self.ref_price for i in df.index ], color='blue', linewidth=3, label='ref')
+        plt.plot(df.index, [self.buy_orders for i in df.index ], color ='green', linewidth =0.5, linestyle='--' )
+        plt.plot(df.index, [self.sell_orders for i in df.index ] , color ='red', linewidth =0.5, linestyle='--')
 
-        plt.plot([i[0] for i in grid_bot.sell_points], [i[1] for i in grid_bot.sell_points] , 'ro', linewidth =2)
-        plt.plot([i[0] for i in grid_bot.buy_points], [i[1] for i in grid_bot.buy_points] , 'go', linewidth =2)
+        plt.plot([i[0] for i in self.sell_points], [i[1] for i in self.sell_points] , 'ro', linewidth =2)
+        plt.plot([i[0] for i in self.buy_points], [i[1] for i in self.buy_points] , 'go', linewidth =2)
 
         plt.legend()
         plt.show()
