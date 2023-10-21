@@ -1,5 +1,6 @@
 from tqdm import tqdm
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 class GridBot:
@@ -66,7 +67,7 @@ class GridBot:
         plt.show()
                     
 
-grid_bot = GridBot()
-grid_bot.trade('data/raw/btcusdt.csv')
-print(grid_bot.balance)
-print(grid_bot.history)
+# grid_bot = GridBot()
+# grid_bot.trade('data/raw/btcusdt.csv')
+# print(grid_bot.balance)
+# print(grid_bot.history)
