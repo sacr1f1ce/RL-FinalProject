@@ -48,7 +48,7 @@ class GridBot:
 
         for index, row in tqdm(df.iterrows()):
 
-            sell_amount = self.assets / self.levels_num
+            sell_amount = self.assets / sum(self.bought) if sum(self.bought) else 0
 
             for i in range(len(self.bought)):
                 if self.bought[i] and row.High >= sell_orders[i]:
@@ -57,6 +57,7 @@ class GridBot:
                     self.balance += (
                         sell_amount * sell_orders[i] * (1 - self.fee)
                     )
+                    self.assets -= sell_amount
 
                     self.history += [self.balance]
                     self.sell_points += [(index, sell_orders[i])]
@@ -64,7 +65,7 @@ class GridBot:
                 elif not self.bought[i] and row.Low <= buy_orders[i] and self.balance >= buy_amount:
                     self.bought[i] = True
                     self.balance -= buy_amount
-                    self.assets += (1 - self.fee) * buy_amount
+                    self.assets += (1 - self.fee) * buy_amount / buy_orders[i]
                     self.history += [self.balance]
                     self.buy_points += [(index, buy_orders[i])]
 
@@ -86,6 +87,8 @@ class GridBot:
 
         plt.legend()
         plt.show()
+
+
 grid_bot = GridBot()
 grid_bot.trade('data/raw/btcusdt.csv')
 print(grid_bot.balance)
