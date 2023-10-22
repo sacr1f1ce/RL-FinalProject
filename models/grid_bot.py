@@ -68,7 +68,7 @@ class GridBot:
                     self.assets += (1 - self.fee) * buy_amount / buy_orders[i]
                     self.history += [self.balance]
                     self.buy_points += [(index, buy_orders[i])]
-
+        self.balance += self.assets * df.iloc[-1].Close * (1 - self.fee)
         return self
     
     def plot(self, df_path):
