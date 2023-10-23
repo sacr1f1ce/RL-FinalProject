@@ -6,9 +6,8 @@ from tqdm import tqdm
 class AdaptiveGridBot:
     def __init__(
             self,
-            policy,
-            running_reward,
-            discount,  # 0.99
+            market_data,
+            update_step=10, # in minutes
             levels_num=4,
             levels_step=0.01,  # initial level step
             balance=100000,
@@ -18,10 +17,8 @@ class AdaptiveGridBot:
         assert 0 < levels_step < 1, f'levels_step must be in (0, 1) range, {levels_step}'
         assert levels_num >= 1, f'levels_num must be greater than 0, {levels_num}'
 
-        self.__policy = policy
-        self.__running_reward = running_reward
-        self.__discount = discount
-
+        self.data = market_data
+        self.update_step = update_step
         self.levels_num = levels_num
         self.levels_step = levels_step
         self.balance = balance
@@ -30,6 +27,15 @@ class AdaptiveGridBot:
         self.buy_points = []
         self.sell_points = []
         self.use_up = use_up
+
+        self.current_step_idx = 0
+
+        self.levels_step_init = levels_step
+        self.balance_init = balance
+
+        self.assets = 0
+        self.bought = [False for _ in range(self.levels_num)]
+        self.action = 0
 
     def get_buy_levels(self):
         self.buy_amount = self.balance / self.levels_num
@@ -47,25 +53,20 @@ class AdaptiveGridBot:
                 self.ref_price * (1-k * self.levels_step) for k in range(self.levels_num)
             ]
 
-    def trade(self, market_data, update_step=10):  # update_step in minutes
-        self.assets = 0
-        self.bought = [False for _ in range(self.levels_num)]
+    def step(self):
+        if self.action > 0:
+            self.levels_step = self.action
+
         self.get_buy_levels()
         self.get_sell_levels()
 
-        cnt = 0
-        for index, row in tqdm(market_data.iterrows()):
+        for index, row in self.data.iloc[
+            self.update_step * self.current_step_idx:self.update_step * (self.current_step_idx + 1)
+        ].iterrows():
 
             sell_amount = self.assets / sum(self.bought) if sum(self.bought) else 0
 
             for i in range(len(self.bought)):
-
-                if cnt == update_step:  # updating the grid step
-                    cnt = 0
-                    self.levels_step = self.__policy(row)
-                    self.get_buy_levels()
-                    self.get_sell_levels()
-                    
                 if self.bought[i] and row.High >= self.sell_orders[i]:  # selling
                     self.bought[i] = False
         
@@ -84,40 +85,36 @@ class AdaptiveGridBot:
                     self.history += [self.balance]
                     self.buy_points += [(index, self.buy_orders[i])]
 
-                cnt += 1
-        self.balance += self.assets * market_data.iloc[-1].Close * (1 - self.fee)  # selling the rest if we have any
-
-
-        trajectory = [self.__initial_state]
-        actions = []
-        total_reward = 0
-        accumulated_discount = 1
-        for _ in range(steps):
-            current_state = trajectory[-1]
-            control_input = self.__controller(parameters, current_state)
-            actions.append(control_input)
-        
-        next_state = self.__state_transition_function(current_state, control_input)
-        total_reward += self.__running_reward(current_state, control_input) * accumulated_discount
-        accumulated_discount *= self.__discount
-
-        trajectory.append(next_state)
-        #return np.array(trajectory), np.array(actions), total_reward
+        self.current_step_idx += 1
+        return self.step * self.update_step < len(self.market_data)
     
-
-
-slingshot_initial_state = np.array([-1.0, 0.0, 0.0, 0.0])
-
-
-
-
-def step(parameters, sample_size=20, learning_rate=0.1):
-    average_shift = 0
-    average_total_reward = 0
-    for _ in range(sample_size):
-        _, actions, total_reward = slingshot_system.run_with_parameters(parameters)
-        average_shift += (actions[0] - parameters) * total_reward / sample_size
-        average_total_reward += total_reward / sample_size
-    return project(parameters + learning_rate * average_shift), average_total_reward, norm(learning_rate * average_shift) / 0.04
-
-
+    def get_sim_step_data(self):
+        last_row = self.data.iloc[self.update_step * (self.current_step_idx + 1) - 1]
+        observation = (
+            last_row.ema12,
+            last_row.ema26,
+            last_row.macd,
+            last_row.force_index,
+            self.balance + self.assets * last_row.Close
+            )
+        return (
+            np.array(observation),
+            np.copy(self.action),
+            int(self.current_step_idx),
+        )
+    
+    def recieve_action(self, action):
+        self.action = action
+        
+    def reset(self):
+        self.levels_step = self.levels_step_init
+        self.balance = self.balance_init
+        self.history = []
+        self.buy_points = []
+        self.sell_points = []
+        self.current_step_idx = 0
+        self.assets = 0
+        self.bought = [False for _ in range(self.levels_num)]
+        
+    # STEPS_UPDATE, 
+    #STATE INIT

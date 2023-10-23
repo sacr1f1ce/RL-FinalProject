@@ -1,3 +1,21 @@
+from buffer import IterationBuffer
+import torch
+from torch import nn
+from torch.distributions.multivariate_normal import MultivariateNormal
+from typing import Tuple, Dict
+from optimizer import Optimizer
+
+
+class Multiply(nn.Module):
+    def __init__(self, alpha):
+        super().__init__()
+        self.alpha = alpha
+
+    def forward(self, x):
+        x = torch.mul(x, self.alpha)
+        return x
+
+
 class GaussianPDFModel(nn.Module):
     """Model for REINFORCE algorithm that acts like f(x) + normally distributed noise"""
 
@@ -7,7 +25,6 @@ class GaussianPDFModel(nn.Module):
         dim_action: int,
         dim_hidden: int,
         std: float,
-        action_bounds: np.array,
         scale_factor: float,
         leakyrelu_coef=0.2,
     ):
@@ -39,98 +56,16 @@ class GaussianPDFModel(nn.Module):
                 requires_grad=False,
             ),
         )
-        self.register_parameter(
-            name="action_bounds",
-            param=torch.nn.Parameter(
-                torch.tensor(action_bounds).float(),
-                requires_grad=False,
-            ),
-        )
 
-
-        #-----------------------------------------------------------------------
-        # HINT
-        #
-        # Define your perceptron (or its layers) here
-        #
-        # TAs used nn.Sequential(...)
-        # https://pytorch.org/docs/stable/generated/torch.nn.Sequential.html
-
-        # YOUR CODE GOES HERE
-        
         self.perceptron = nn.Sequential(
             nn.Linear(self.dim_observation, self.dim_hidden),
             nn.LeakyReLU(self.leakyrelu_coef),
             nn.Linear(self.dim_hidden, self.dim_hidden),
             nn.LeakyReLU(self.leakyrelu_coef),
             nn.Linear(self.dim_hidden, self.dim_action),
+            nn.Sigmoid(),
             Multiply(1 / self.scale_factor),
-            nn.Tanh(),
-            Multiply(1 - 3 * self.std)
         )
-        #-----------------------------------------------------------------------
-
-
-
-    def get_unscale_coefs_from_minus_one_one_to_action_bounds(
-        self,
-    ) -> Tuple[torch.FloatTensor, torch.FloatTensor]:
-        """Calculate coefficients for linear transformation from [-1, 1] to [U_min, U_max].
-
-        Returns:
-            Tuple[torch.FloatTensor, torch.FloatTensor]: coefficients
-        """
-
-        action_bounds = self.get_parameter("action_bounds")
-        #-----------------------------------------------------------------------
-        # HINT
-        #
-        # You need to return a tuple of \\beta, \\lambda
-        #
-        # Note that action bounds are denoted above as [U_max, U_min]
-        #
-        # YOUR CODE GOES HERE
-        U_min, U_max = action_bounds[0]
-        return (U_max + U_min) / 2, (U_max - U_min) / 2
-        #-----------------------------------------------------------------------
-
-    def unscale_from_minus_one_one_to_action_bounds(
-        self, x: torch.FloatTensor
-    ) -> torch.FloatTensor:
-        """Linear transformation from [-1, 1] to [U_min, U_max].
-
-        Args:
-            x (torch.FloatTensor): tensor to transform
-
-        Returns:
-            torch.FloatTensor: transformed tensor
-        """
-
-        (
-            unscale_bias,
-            unscale_multiplier,
-        ) = self.get_unscale_coefs_from_minus_one_one_to_action_bounds()
-
-        return x * unscale_multiplier + unscale_bias
-
-    def scale_from_action_bounds_to_minus_one_one(
-        self, y: torch.FloatTensor
-    ) -> torch.FloatTensor:
-        """Linear transformation from [U_min, U_max] to [-1, 1].
-
-        Args:
-            y (torch.FloatTensor): tensor to transform
-
-        Returns:
-            torch.FloatTensor: transformed tensor
-        """
-
-        (
-            unscale_bias,
-            unscale_multiplier,
-        ) = self.get_unscale_coefs_from_minus_one_one_to_action_bounds()
-
-        return (y - unscale_bias) / unscale_multiplier
 
     def get_means(self, observations: torch.FloatTensor) -> torch.FloatTensor:
         """Return mean for MultivariateNormal from `observations`
@@ -142,15 +77,7 @@ class GaussianPDFModel(nn.Module):
             torch.FloatTensor: means
         """
 
-        #-----------------------------------------------------------------------
-        # HINT
-        #
-        # You should return here exactly the \\mu_theta(observations)
-        # YOUR CODE GOES HERE
         return self.perceptron(observations.float())
-        #-----------------------------------------------------------------------
-
-
 
     def split_to_observations_actions(
         self, observations_actions: torch.FloatTensor
@@ -169,13 +96,13 @@ class GaussianPDFModel(nn.Module):
 
         if len(observations_actions.shape) == 1:
             observation, action = (
-                observations_actions[: self.dim_observation],
-                observations_actions[self.dim_observation :],
+                observations_actions[:self.dim_observation],
+                observations_actions[self.dim_observation:],
             )
         elif len(observations_actions.shape) == 2:
             observation, action = (
-                observations_actions[:, : self.dim_observation],
-                observations_actions[:, self.dim_observation :],
+                observations_actions[:, :self.dim_observation],
+                observations_actions[:, self.dim_observation:],
             )
         else:
             raise ValueError("Input tensor has unexpected dims")
@@ -197,19 +124,10 @@ class GaussianPDFModel(nn.Module):
         )
 
         scale_tril_matrix = self.get_parameter("scale_tril_matrix")
-
-        #-----------------------------------------------------------------------
-        # HINT
-        # You should calculate pdf_Normal(\\lambda \\mu_theta(observations) + \\beta, \\lambda ** 2 \\sigma ** 2)(actions)
-        #
-        # TAs used not NormalDistribution, but MultivariateNormal
-        # See here https://pytorch.org/docs/stable/distributions.html#multivariatenormal
-        # YOUR CODE GOES HERE
+   
         means = self.get_means(observations)
         distr = MultivariateNormal(means, scale_tril=scale_tril_matrix)
-        return distr.log_prob(self.scale_from_action_bounds_to_minus_one_one(actions))
-        #-----------------------------------------------------------------------
-
+        return distr.log_prob(actions)
 
     def sample(self, observation: torch.FloatTensor) -> torch.FloatTensor:
         """Sample action from `MultivariteNormal(lambda * self.get_means(observation) + beta, lambda ** 2 * Diag[self.std] ** 2)`
@@ -220,17 +138,55 @@ class GaussianPDFModel(nn.Module):
         Returns:
             torch.FloatTensor: sampled action
         """
-        action_bounds = self.get_parameter("action_bounds")
         scale_tril_matrix = self.get_parameter("scale_tril_matrix")
 
-        #-----------------------------------------------------------------------
-        # HINT
-        # Sample action from `MultivariateNormal(lambda * self.get_means(observation) + beta, lambda ** 2 * Diag[self.std] ** 2)
-        # YOUR CODE GOES HERE
         distr = MultivariateNormal(self.get_means(observation), scale_tril=scale_tril_matrix)
-        sampled_action = self.unscale_from_minus_one_one_to_action_bounds(distr.sample())
-        #-----------------------------------------------------------------------
-        
-        return torch.clamp(
-            sampled_action, action_bounds[:, 0], action_bounds[:, 1]
-        )
+        sampled_action = distr.sample()
+
+        return sampled_action
+
+
+class PolicyREINFORCE:
+    def __init__(
+        self, model: nn.Module, optimizer: Optimizer, device: str = "cpu", is_with_baseline: bool = True,
+    ) -> None:
+        """Initialize policy
+
+        Args:
+            model (nn.Module): model to optimize
+            optimizer (Optimizer): optimizer for `model` weights optimization
+            device (str, optional): device for gradient descent optimization procedure. Defaults to "cpu".
+            is_with_baseline (bool, optional): whether to use baseline in objective function.
+        """
+
+        self.buffer = IterationBuffer()
+        self.model = model
+        self.optimizer = optimizer
+        self.device = device
+        self.is_with_baseline = is_with_baseline
+
+    def objective(self, batch: Dict["str", torch.tensor]) -> torch.tensor:
+        """This method computes a proxy objective specifically for automatic differentiation since its gradient is exactly as in REINFORCE
+
+        Args:
+            batch (torch.tensor): batch with catted observations-actions, total objectives and baselines
+
+        Returns:
+            torch.tensor: objective value
+        """
+
+        observations_actions = batch["observations_actions"].to(self.device)
+        tail_total_objectives = batch["tail_total_objectives"].to(self.device)
+        baselines = batch["baselines"].to(self.device)
+
+        log_probs = self.model.log_probs(observations_actions)
+        return ((tail_total_objectives - baselines) * log_probs).sum() / self.N_episodes
+
+    def REINFORCE_step(self) -> None:
+        """Do gradient REINFORCE step"""
+
+        self.N_episodes = self.buffer.get_N_episodes()
+        self.model.to(self.device)
+        self.optimizer.optimize(self.objective, self.buffer)
+        self.model.to("cpu")
+        self.buffer.nullify_buffer()
