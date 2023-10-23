@@ -60,7 +60,7 @@ class MonteCarloSimulationScenario:
         Returns:
             float: running objective value
         """
-        return observation[0] ** 2 + observation[1] ** 2
+        return observation[-1]
 
     def run(self) -> None:
         """Run main loop"""
@@ -73,11 +73,7 @@ class MonteCarloSimulationScenario:
             for episode_idx in tqdm(range(self.N_episodes)):
                 terminated = False
                 while self.bot.step():
-                    (
-                        observation,
-                        action,
-                        step_idx,
-                    ) = self.bot.get_sim_step_data()
+                    observation, action, step_idx = self.bot.get_sim_step_data()
 
                     new_action = (
                         self.policy.model.sample(torch.tensor(observation).float())
@@ -133,47 +129,4 @@ class MonteCarloSimulationScenario:
             )
 
             self.total_objectives_episodic = []
-
-    def plot_data(self):
-        """Plot learning results"""
-
-        data = pd.Series(
-            index=range(1, len(self.learning_curve) + 1), data=self.learning_curve
-        )
-        na_mask = data.isna()
-        not_na_mask = ~na_mask
-        interpolated_values = data.interpolate()
-        interpolated_values[not_na_mask] = None
-        data.plot(marker="o", markersize=3)
-        interpolated_values.plot(linestyle="--")
-
-        plt.title("Total cost by iteration")
-        plt.xlabel("Iteration number")
-        plt.ylabel("Total cost")
-        plt.yscale("log")
-        plt.show()
-
-        theta_ax, dot_theta_ax = pd.DataFrame(
-            data=self.last_observations.loc[0].values
-        ).plot(
-            xlabel="Step Number",
-            title="Observations in last iteration",
-            legend=False,
-            subplots=True,
-            grid=True,
-        )
-        theta_ax.set_ylabel("angle")
-        dot_theta_ax.set_ylabel("angular velocity")
-
-        actions_ax = pd.DataFrame(
-            data=self.last_actions.loc[0].values
-        ).plot(
-            xlabel="Step Number",
-            title="Actions in last iteration",
-            legend=False,
-            grid=True,
-        )
-        actions_ax.set_ylabel("action")
-
-        plt.show()
     

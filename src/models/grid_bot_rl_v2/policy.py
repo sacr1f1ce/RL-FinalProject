@@ -118,7 +118,8 @@ class GaussianPDFModel(nn.Module):
         Returns:
             torch.FloatTensor: log pdf(action | observation) for the batch of observations and actions
         """
-
+        print(batch_of_observations_actions)
+        print(batch_of_observations_actions.shape)
         observations, actions = self.split_to_observations_actions(
             batch_of_observations_actions
         )
@@ -140,7 +141,7 @@ class GaussianPDFModel(nn.Module):
         """
         scale_tril_matrix = self.get_parameter("scale_tril_matrix")
 
-        distr = MultivariateNormal(self.get_means(observation), scale_tril=scale_tril_matrix)
+        distr = MultivariateNormal(self.get_means(observation[:-1]), scale_tril=scale_tril_matrix)
         sampled_action = distr.sample()
 
         return sampled_action

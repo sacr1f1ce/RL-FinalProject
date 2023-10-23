@@ -1,3 +1,10 @@
+from buffer import IterationBuffer
+import torch
+from torch.utils.data import DataLoader
+from torch import nn
+from typing import Dict, Callable, Type, Any
+
+
 class Optimizer:
     """Does gradient step for optimizing model weights"""
 
@@ -38,7 +45,6 @@ class Optimizer:
 
         dataloader = DataLoader(
             dataset=dataset,
-            shuffle=self.shuffle,
             batch_size=len(dataset),
         )
         batch_sample = next(iter(dataloader))

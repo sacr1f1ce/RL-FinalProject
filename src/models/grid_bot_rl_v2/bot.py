@@ -56,7 +56,7 @@ class AdaptiveGridBot:
     def step(self):
         if self.action > 0:
             self.levels_step = self.action
-
+        self.ref_price = self.data.iloc[self.update_step * self.current_step_idx].Open
         self.get_buy_levels()
         self.get_sell_levels()
 
@@ -86,7 +86,7 @@ class AdaptiveGridBot:
                     self.buy_points += [(index, self.buy_orders[i])]
 
         self.current_step_idx += 1
-        return self.step * self.update_step < len(self.market_data)
+        return self.current_step_idx * (self.update_step + 1) < len(self.data)
     
     def get_sim_step_data(self):
         last_row = self.data.iloc[self.update_step * (self.current_step_idx + 1) - 1]
@@ -95,15 +95,11 @@ class AdaptiveGridBot:
             last_row.ema26,
             last_row.macd,
             last_row.force_index,
-            self.balance + self.assets * last_row.Close
+            float(self.balance + self.assets * last_row.Close)
             )
-        return (
-            np.array(observation),
-            np.copy(self.action),
-            int(self.current_step_idx),
-        )
-    
-    def recieve_action(self, action):
+        return np.array(observation), np.copy(self.action), int(self.current_step_idx)
+        
+    def receive_action(self, action):
         self.action = action
         
     def reset(self):
