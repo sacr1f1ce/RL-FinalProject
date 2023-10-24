@@ -76,7 +76,6 @@ class GaussianPDFModel(nn.Module):
         Returns:
             torch.FloatTensor: means
         """
-
         return self.perceptron(observations.float())
 
     def split_to_observations_actions(
@@ -97,12 +96,12 @@ class GaussianPDFModel(nn.Module):
         if len(observations_actions.shape) == 1:
             observation, action = (
                 observations_actions[:self.dim_observation],
-                observations_actions[self.dim_observation:],
+                observations_actions[self.dim_observation+1:],
             )
         elif len(observations_actions.shape) == 2:
             observation, action = (
                 observations_actions[:, :self.dim_observation],
-                observations_actions[:, self.dim_observation:],
+                observations_actions[:, self.dim_observation+1:],
             )
         else:
             raise ValueError("Input tensor has unexpected dims")
@@ -118,14 +117,14 @@ class GaussianPDFModel(nn.Module):
         Returns:
             torch.FloatTensor: log pdf(action | observation) for the batch of observations and actions
         """
-        print(batch_of_observations_actions)
-        print(batch_of_observations_actions.shape)
+        # print(batch_of_observations_actions)
+        # print(batch_of_observations_actions.shape)
         observations, actions = self.split_to_observations_actions(
             batch_of_observations_actions
         )
 
         scale_tril_matrix = self.get_parameter("scale_tril_matrix")
-   
+
         means = self.get_means(observations)
         distr = MultivariateNormal(means, scale_tril=scale_tril_matrix)
         return distr.log_prob(actions)

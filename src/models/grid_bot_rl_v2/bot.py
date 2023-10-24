@@ -69,7 +69,7 @@ class AdaptiveGridBot:
             for i in range(len(self.bought)):
                 if self.bought[i] and row.High >= self.sell_orders[i]:  # selling
                     self.bought[i] = False
-        
+
                     self.balance += (
                         sell_amount * self.sell_orders[i] * (1 - self.fee)
                     )
@@ -87,7 +87,7 @@ class AdaptiveGridBot:
 
         self.current_step_idx += 1
         return self.current_step_idx * (self.update_step + 1) < len(self.data)
-    
+
     def get_sim_step_data(self):
         last_row = self.data.iloc[self.update_step * (self.current_step_idx + 1) - 1]
         observation = (
@@ -95,13 +95,13 @@ class AdaptiveGridBot:
             last_row.ema26,
             last_row.macd,
             last_row.force_index,
-            float(self.balance + self.assets * last_row.Close)
+            -float(self.balance + self.assets * last_row.Close)
             )
         return np.array(observation), np.copy(self.action), int(self.current_step_idx)
-        
+
     def receive_action(self, action):
         self.action = action
-        
+
     def reset(self):
         self.levels_step = self.levels_step_init
         self.balance = self.balance_init
@@ -111,6 +111,6 @@ class AdaptiveGridBot:
         self.current_step_idx = 0
         self.assets = 0
         self.bought = [False for _ in range(self.levels_num)]
-        
-    # STEPS_UPDATE, 
+
+    # STEPS_UPDATE,
     #STATE INIT

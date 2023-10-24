@@ -129,4 +129,3 @@ class MonteCarloSimulationScenario:
             )
 
             self.total_objectives_episodic = []
-    
