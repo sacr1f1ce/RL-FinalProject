@@ -24,6 +24,7 @@ class GaussianPDFModel(nn.Module):
         dim_observation: int,
         dim_action: int,
         dim_hidden: int,
+        n_hidden_layers: int,
         std: float,
         scale_factor: float,
         leakyrelu_coef=0.2,
@@ -45,6 +46,7 @@ class GaussianPDFModel(nn.Module):
         self.dim_observation = dim_observation
         self.dim_action = dim_action
         self.dim_hidden = dim_hidden
+        self.n_hidden_layers = n_hidden_layers
         self.leakyrelu_coef = leakyrelu_coef
         self.std = std
 
@@ -57,15 +59,10 @@ class GaussianPDFModel(nn.Module):
             ),
         )
 
-        self.perceptron = nn.Sequential(
-            nn.Linear(self.dim_observation, self.dim_hidden),
-            nn.LeakyReLU(self.leakyrelu_coef),
-            nn.Linear(self.dim_hidden, self.dim_hidden),
-            nn.LeakyReLU(self.leakyrelu_coef),
-            nn.Linear(self.dim_hidden, self.dim_action),
-            nn.Sigmoid(),
-            Multiply(1 / self.scale_factor),
-        )
+        layers_ = [nn.Linear(self.dim_observation, self.dim_hidden), nn.LeakyReLU(self.leakyrelu_coef)]
+        layers_ += [nn.Linear(self.dim_hidden, self.dim_hidden), nn.LeakyReLU(self.leakyrelu_coef)] * self.n_hidden_layers
+        layers_ += [nn.Linear(self.dim_hidden, self.dim_action), nn.Sigmoid(), Multiply(1 / self.scale_factor)]
+        self.perceptron = nn.Sequential(*layers_)
 
     def get_means(self, observations: torch.FloatTensor) -> torch.FloatTensor:
         """Return mean for MultivariateNormal from `observations`
@@ -143,7 +140,7 @@ class GaussianPDFModel(nn.Module):
         distr = MultivariateNormal(self.get_means(observation[:-1]), scale_tril=scale_tril_matrix)
         sampled_action = distr.sample()
 
-        return sampled_action
+        return torch.clamp(sampled_action, min=0.0)
 
 
 class PolicyREINFORCE:
