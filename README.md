@@ -2,12 +2,12 @@ RL-FinalProject
 ==============================
 
 Optimizing grid bot trading strategy with RL. <br>
-For now to run in you can simple do 
+For now to run in you can simple do (right it uses the best parameters we were able to find by default)
 ```
 grid_bot = GridBot()
 grid_bot.trade(df_path)
 ```
-
+It will contain all the relevant info inside. 
 
 Project Organization
 ------------
