@@ -8,8 +8,8 @@ class AdaptiveGridBot:
             self,
             market_data,
             update_step=10, # in minutes
-            levels_num=5,
-            levels_step=0.01,  # initial level step
+            levels_num=10,
+            levels_step=0.001,  # initial level step
             balance=100000,
             fee=0.2181 / 100,
             above_level_pct=0.2,

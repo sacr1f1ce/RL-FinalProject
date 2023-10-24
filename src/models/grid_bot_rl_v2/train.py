@@ -102,8 +102,8 @@ class MonteCarloSimulationScenario:
                             episode_idx,
                         )
                     self.bot.receive_action(new_action)
+                self.total_objectives_episodic.append(self.total_objective/self.bot.current_step_idx)
                 self.bot.reset()
-                self.total_objectives_episodic.append(self.total_objective)
                 self.total_objective = 0
             self.learning_curve.append(np.mean(self.total_objectives_episodic))
             self.last_observations = pd.DataFrame(
