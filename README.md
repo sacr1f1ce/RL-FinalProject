@@ -65,6 +65,7 @@ Results for Regular bot 7 days
 Results of RL approach
 ------------
 ![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_3.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_3.png)
+![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_1.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_1.png)
 ![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_act.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_act.png)
 
 --------
