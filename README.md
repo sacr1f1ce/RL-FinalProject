@@ -1,9 +1,10 @@
 
-
 Results for Regular bot 7 days
+<br>
 ![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/total_7.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/total_7.png)
 
 Results of RL approach
+<br>
 ![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_3.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_3.png)
 
 RL-FinalProject
