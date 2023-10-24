@@ -60,7 +60,7 @@ class MonteCarloSimulationScenario:
         Returns:
             float: running objective value
         """
-        return observation[-1]
+        return -observation[-1]
 
     def run(self) -> None:
         """Run main loop"""
@@ -85,7 +85,6 @@ class MonteCarloSimulationScenario:
                         step_idx
                     ) * self.compute_running_objective(observation, new_action)
                     self.total_objective += discounted_running_objective
-
                     if not terminated and self.termination_criterion(
                         observation,
                         new_action,
@@ -103,8 +102,8 @@ class MonteCarloSimulationScenario:
                             episode_idx,
                         )
                     self.bot.receive_action(new_action)
+                self.total_objectives_episodic.append(self.total_objective/self.bot.current_step_idx)
                 self.bot.reset()
-                self.total_objectives_episodic.append(self.total_objective)
                 self.total_objective = 0
             self.learning_curve.append(np.mean(self.total_objectives_episodic))
             self.last_observations = pd.DataFrame(
@@ -129,3 +128,48 @@ class MonteCarloSimulationScenario:
             )
 
             self.total_objectives_episodic = []
+
+    def plot_data(self):
+        """Plot learning results"""
+
+        data = pd.Series(
+            index=range(1, len(self.learning_curve) + 1), data=[abs(x) for x in self.learning_curve]
+        )
+        na_mask = data.isna()
+        not_na_mask = ~na_mask
+        interpolated_values = data.interpolate()
+        interpolated_values[not_na_mask] = None
+        data.plot(marker="o", markersize=3)
+        interpolated_values.plot(linestyle="--")
+
+        plt.title("Total balance by iteration")
+        plt.xlabel("Iteration number")
+        plt.ylabel("Total cost")
+        plt.yscale("log")
+        plt.show()
+
+        ema12, ema26, macd, force_index, = pd.DataFrame(
+            data=self.last_observations.loc[0].values[:, :-1]
+        ).plot(
+            xlabel="Step Number",
+            title="Observations in last iteration",
+            legend=False,
+            subplots=True,
+            grid=True,
+        )
+        ema12.set_ylabel("ema12")
+        ema26.set_ylabel("ema26")
+        macd.set_ylabel("macd")
+        force_index.set_ylabel("force_index")
+
+        actions_ax = pd.DataFrame(
+            data=self.last_actions.loc[0].values
+        ).plot(
+            xlabel="Step Number",
+            title="Actions in last iteration",
+            legend=False,
+            grid=True,
+        )
+        actions_ax.set_ylabel("action")
+
+        plt.show()

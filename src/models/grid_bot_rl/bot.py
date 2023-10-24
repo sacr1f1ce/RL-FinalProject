@@ -8,11 +8,12 @@ class AdaptiveGridBot:
             self,
             market_data,
             update_step=10, # in minutes
-            levels_num=4,
-            levels_step=0.01,  # initial level step
+            levels_num=10,
+            levels_step=0.001,  # initial level step
             balance=100000,
             fee=0.2181 / 100,
-            use_up=False
+            above_level_pct=0.2,
+            use_up=None
     ):
         assert 0 < levels_step < 1, f'levels_step must be in (0, 1) range, {levels_step}'
         assert levels_num >= 1, f'levels_num must be greater than 0, {levels_num}'
@@ -27,6 +28,7 @@ class AdaptiveGridBot:
         self.buy_points = []
         self.sell_points = []
         self.use_up = use_up
+        self.above_level_pct = above_level_pct
 
         self.current_step_idx = 0
 
@@ -44,14 +46,20 @@ class AdaptiveGridBot:
         ]
 
     def get_sell_levels(self):
-        if self.use_up:
-            self.sell_orders = [
-                self.ref_price * (1+k * self.levels_step) for k in range(self.levels_num)
-            ]
+        if isinstance(self.use_up, bool):
+            if self.use_up:
+                self.sell_orders = [self.ref_price * (1 + k * self.levels_step) for k in range(self.levels_num)]
+            else:
+                self.sell_orders = [self.ref_price * (1 - k * self.levels_step) for k in range(self.levels_num)]
+
         else:
-            self.sell_orders = [
-                self.ref_price * (1-k * self.levels_step) for k in range(self.levels_num)
-            ]
+            self.sell_orders = []
+            for k in range(self.levels_num):
+                if k > int(self.levels_num*self.above_level_pct):
+                    k = k - int(self.levels_num*self.above_level_pct)
+                    self.sell_orders += [self.ref_price * (1 - k * self.levels_step)]
+                else:
+                    self.sell_orders += [self.ref_price * (1 + k * self.levels_step)]
 
     def step(self):
         if self.action > 0:
@@ -95,8 +103,8 @@ class AdaptiveGridBot:
             last_row.ema26,
             last_row.macd,
             last_row.force_index,
-            -float(self.balance + self.assets * last_row.Close)
-            )
+            float(self.balance + self.assets * last_row.Close)
+        )
         return np.array(observation), np.copy(self.action), int(self.current_step_idx)
 
     def receive_action(self, action):
