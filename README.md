@@ -1,16 +1,13 @@
-
-Results for Regular bot 7 days
-<br>
-![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/total_7.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/total_7.png)
-
-Results of RL approach
-<br>
-![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_3.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_3.png)
-
 RL-FinalProject
 ==============================
 
-Optimizing grid bot trading strategy with RL.
+Optimizing grid bot trading strategy with RL. <br>
+For now to run in you can simple do (right it uses the best parameters we were able to find by default)
+```
+grid_bot = GridBot()
+grid_bot.trade(df_path)
+```
+It will contain all the relevant info inside. 
 
 Project Organization
 ------------
@@ -55,6 +52,27 @@ Project Organization
     │
     └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
 
+
+Results for Regular bot 1 day
+------------
+![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/total_1.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/total_1.png)
+
+
+Results for Regular bot 3 days
+------------
+![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/total_3.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/total_3.png)
+
+
+
+Results for Regular bot 7 days
+------------
+![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/total_7.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/total_7.png)
+
+Results of RL approach
+------------
+![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_3.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_3.png)
+![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_1.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_1.png)
+![https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_act.png](https://github.com/sacr1f1ce/RL-FinalProject/blob/main/reports/figures/RL_act.png)
 
 --------
 
