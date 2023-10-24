@@ -10,7 +10,8 @@ def get_data(ticker):
         client.get_historical_klines(
             ticker,
             '1m',
-            '2023-10-11'
+            '2023-10-17',
+            '2023-10-21'
         )
     )
     df = df.iloc[:, :6]

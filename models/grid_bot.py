@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 class GridBot:
     def __init__(
             self,
-            levels_num=10,
+            levels_num=14,
             balance=100000,
             levels_step=0.001, # must be > 0.0044
             fee=0.2181 / 100,
-            use_up=False
+            use_up=None
     ):
 
         assert 0 < levels_step < 1, f'levels_step must be in (0, 1) range, {levels_step}'
@@ -40,8 +40,16 @@ class GridBot:
 
         if self.use_up:
             sell_orders = [ref_price * (1 + k * self.levels_step) for k in range(self.levels_num)]
-        else:
+        elif self.use_up == False:
             sell_orders = [ref_price * (1 - k * self.levels_step) for k in range(self.levels_num)]
+        else:
+            sell_orders = []
+            for k in range(self.levels_num):
+                if k > int(self.levels_num*0.2):
+                    k = k - int(self.levels_num*0.2)
+                    sell_orders += [ref_price * (1 - k * self.levels_step)]
+                else:
+                    sell_orders += [ref_price * (1 + k * self.levels_step)]
 
         self.buy_orders = buy_orders
         self.sell_orders = sell_orders
