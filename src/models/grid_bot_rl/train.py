@@ -144,7 +144,7 @@ class MonteCarloSimulationScenario:
 
         plt.title("Total balance by iteration")
         plt.xlabel("Iteration number")
-        plt.ylabel("Total cost")
+        plt.ylabel("Total balance")
         plt.yscale("log")
         plt.show()
 
